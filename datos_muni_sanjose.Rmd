@@ -2,10 +2,7 @@
 title: "¿Cómo conectarse a los datos abiertos de la muni de San José?"
 author: "ronny hdez-mora"
 date: "February 9, 2019"
-output: 
-    html_document:
-      toc: true
-      toc_float: true
+output: md_document
 editor_options: 
   chunk_output_type: console
 ---
@@ -136,7 +133,7 @@ glimpse(asist_educacion)
 
 ## Referencias
 
-[vignette del paquete junr](https://cran.r-project.org/web/packages/junr/vignettes/acceder-junar-api.html)
-[Página desarrolladores Municipalidad de San José](http://datosabiertos.msj.go.cr/developers/)
-[Gobierno abierto Costa Rica](http://www.gobiernoabierto.go.cr/)
+ - [vignette del paquete junr](https://cran.r-project.org/web/packages/junr/vignettes/acceder-junar-api.html)
+ - [Página desarrolladores Municipalidad de San José](http://datosabiertos.msj.go.cr/developers/)
+ - [Gobierno abierto Costa Rica](http://www.gobiernoabierto.go.cr/)
 
