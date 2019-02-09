@@ -1,5 +1,5 @@
 ---
-title: "datos_api"
+title: "¿Cómo conectarse a los datos abiertos de la muni de San José?"
 author: "ronny hdez-mora"
 date: "February 9, 2019"
 output: html_document
@@ -15,11 +15,35 @@ library(dplyr)
 
 ## Datos disponibles
 
-```{r}
-# Nuestras credenciales para hacer la conexión al api de la muni de San José
-url_base <- "http://api.datosabiertos.msj.go.cr/api/v2/datastreams/"
-api_key <- sanjose_api
+Gracias a la iniciativa de [Gobierno Abierto](http://www.gobiernoabierto.go.cr/)
+de Costa Rica tenemos la posibilidad de obtener datos de diferentes entes a través
+de la conexión con API's.
 
+Esto nos da la posibilidad de no pasar por engorrosos procesos de limpiar datos
+a partir de formatos casi imposibles como pdf's, .csv extravagantes u otros
+formatos difíciles de trabajar.
+
+En este caso vamos a utilizar el lenguaje de programación R y el paquete 
+[junr](https://cran.r-project.org/web/packages/junr/index.html) de
+[Frans van Dunné](https://github.com/FvD) para conectarnos al API de la municipalidad
+de San José y revisar qué datos se encuentran disponibles.
+
+### Obtener el API key de la municipalidad de San José
+
+En la siguiente [dirección](http://datosabiertos.msj.go.cr/developers/) podrá encontrar el API key necesario para hacer el llamado.
+
+```{r, echo = FALSE}
+SU_API_KEY <- Sys.getenv("SU_API_KEY")
+```
+
+Vamos a crear como objetos nuestras credenciales para hacer la conexión al
+API de la municipalidad de San José:
+```{r}
+url_base <- "http://api.datosabiertos.msj.go.cr/api/v2/datastreams/"
+api_key <- SU_API_KEY
+```
+
+```{r}
 # Traemos el indice  de los datos que existen
 indice <- get_index(url_base, api_key = api_key)
 
