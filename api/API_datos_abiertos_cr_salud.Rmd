@@ -1,0 +1,44 @@
+---
+title: "API datos abiertos cr salud"
+output: 
+  html_document:
+    code_folding: show
+    fig_height: 30
+    fig_width: 30
+    keep_md: yes
+    toc: yes
+    toc_depth: 2
+toc_float: yes
+---
+
+#Objetivo
+Desarrollar el tutorial de [Frans Van Dunné](https://cran.r-project.org/web/packages/junr/vignettes/acceder-junar-api.html) sobre APIs
+
+```{r}
+library(junr)
+url_base <- "http://api.datosabiertos.presidencia.go.cr/api/v2/dashboards/SALUD-99027.json/"
+api_key <- "20c49cf21dc9aec850a2db2ff60b88ae7938525f"
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, eval=F}
+get_index(url_base, api_key)
+```
+```{r}
+a<-list_guid(url_base, api_key)
+a[1]
+```
+
+```{r}
+list_titles(url_base, api_key)
+```
+
+#Determinar la cantidad de datos disponibles
+
+```{r}
+dim <- get_dimensions(url_base, api_key)
+dim
+```
+
+
+
+
