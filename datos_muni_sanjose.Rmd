@@ -37,16 +37,29 @@ SU_API_KEY <- Sys.getenv("SU_API_KEY")
 ```
 
 Vamos a crear como objetos nuestras credenciales para hacer la conexión al
-API de la municipalidad de San José:
+API de la municipalidad de San José. El url que aparece acá es el que se debe
+de usar para conectarnos al sistema de la muni de San José. Si están siguiendo
+ete ejemplo pueden escribir el mismo que aparece acá.
 ```{r}
 url_base <- "http://api.datosabiertos.msj.go.cr/api/v2/datastreams/"
 api_key <- SU_API_KEY
 ```
 
+Ya que tenemos las credenciales listas (api key & url), vamos a revisar el
+índice de las tablas de datos que la municipalidad ha liberado:
 ```{r}
 # Traemos el indice  de los datos que existen
 indice <- get_index(url_base, api_key = api_key)
 
+# Revisamos el objeto
+indice
+```
+
+Cada uno de los elementos que allí aparecen son distintas tablas que pueden
+tener diferentes dimensiones (filas y columnas). Es como una descripción de lo
+que trata cada tabla. Si queremos traer a nuestro entorno los datos de una tabla
+en específico
+```{r}
 # Necesitamos el guid para hacer un llamado especifico a los datos
 guid <- indice %>% 
   select(title, guid)
