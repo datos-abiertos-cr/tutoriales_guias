@@ -55,8 +55,8 @@ Ya que tenemos las credenciales listas (api key & url), vamos a revisar el
 # Traemos el indice  de los datos que existen
 indice <- get_index(url_base, api_key = api_key)
 
-# Revisamos el objeto
-indice
+# Revisamos estructura del objeto 
+glimpse(indice)
 ```
 
 Cada uno de los elementos que allí aparecen son distintas tablas que pueden
@@ -69,8 +69,9 @@ de dos columnas: título y el GUID
 ```{r}
 guid <- indice %>% 
   select(title, guid)
-```
 
+glimpse(guid)
+```
 
 ### Obtener las dimensiones de las tablas
 Ahora bien, ya sabemos el título y el identificador de la tabla, pero tenemos
@@ -84,7 +85,7 @@ tiene.
 Hay que aclarar que la municipalidad de San José tiene muchas tablas y si usamos
 la función para obtener las dimensiones se puede demorar sus minutos.
 
-```{r}
+```{r dimensiones, cached = TRUE}
 # Por la cantidad de tablas que hay, esta funcion se demora mucho
 dimensiones <- get_dimensions(base_url = url_base, api_key = api_key)
 
@@ -98,7 +99,7 @@ que hemos extraido hasta el momento de tal manera que tengamos un cuadro final
 con la información importante resumida: el título de la tabla, el GUID y las
 dimensiones.
 
-```{r}
+```{r join, cached = TRUE, dependson = "dimensiones"}
 # Unir el titulo a dimensiones
 dimensiones <- left_join(dimensiones, guid, by = c("GUID" = "guid"))
 
@@ -120,7 +121,8 @@ utilizaremos en la función:
 guid_tabla <- "ASIST-EDUCA-SUPER"
 
 # Llamar la tabla. Usamos las mismas credenciales que habíamos usado
-asist_educacion <- get_data(base_url = url_base, api_key = api_key, guid = guid)
+asist_educacion <- get_data(base_url = url_base, api_key = SU_API_KEY, 
+                            guid = guid_tabla)
 ```
 
 ¡Listo! Ya tenemos nuestra tabla de interés con los datos. Vamos a revisarla
