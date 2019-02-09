@@ -2,7 +2,10 @@
 title: "¿Cómo conectarse a los datos abiertos de la muni de San José?"
 author: "ronny hdez-mora"
 date: "February 9, 2019"
-output: html_document
+output: 
+    html_document:
+      toc: true
+      toc_float: true
 editor_options: 
   chunk_output_type: console
 ---
@@ -84,8 +87,16 @@ la función para obtener las dimensiones se puede demorar sus minutos.
 ```{r}
 # Por la cantidad de tablas que hay, esta funcion se demora mucho
 dimensiones <- get_dimensions(base_url = url_base, api_key = api_key)
+
+# Mostrar primeras seis observaciones
+head(dimensiones)
 ```
 
+#### Cuadro con características de las tablas de la muni de SJ
+Ya que tenemos las dimensiones de las tablas, podemos acomodar la información
+que hemos extraido hasta el momento de tal manera que tengamos un cuadro final
+con la información importante resumida: el título de la tabla, el GUID y las
+dimensiones.
 
 ```{r}
 # Unir el titulo a dimensiones
@@ -95,17 +106,35 @@ dimensiones <- left_join(dimensiones, guid, by = c("GUID" = "guid"))
 dim_ordenado <- dimensiones %>%
     arrange(desc(DIM))
 
-# Exportar guia de tablas
-# feather::write_feather(dim_ordenado, "dim_tablas_munisj.feather")
-
+# Revisar primeras entradas
+head(dim_ordenado)
 ```
 
-## Elegir un conjunto de datos
+### Llamar datos de una tabla específica:
+Ya con esto podemos hacer una mejor selección de las tablas que nos serían
+útiles. Cuando ya tengamos identificada una tabla tenemos que anotar su GUID que
+utilizaremos en la función:
+
 ```{r}
-guid <- "ASIST-EDUCA-SUPER"
+# Anotar en un objeto el GUID de la tabla que nos interesa
+guid_tabla <- "ASIST-EDUCA-SUPER"
+
+# Llamar la tabla. Usamos las mismas credenciales que habíamos usado
 asist_educacion <- get_data(base_url = url_base, api_key = api_key, guid = guid)
 ```
 
+¡Listo! Ya tenemos nuestra tabla de interés con los datos. Vamos a revisarla
+```{r}
+head(asist_educacion)
+```
 
+```{r}
+glimpse(asist_educacion)
+```
 
+## Referencias
+
+[vignette del paquete junr](https://cran.r-project.org/web/packages/junr/vignettes/acceder-junar-api.html)
+[Página desarrolladores Municipalidad de San José](http://datosabiertos.msj.go.cr/developers/)
+[Gobierno abierto Costa Rica](http://www.gobiernoabierto.go.cr/)
 
