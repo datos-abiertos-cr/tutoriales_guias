@@ -1,0 +1,53 @@
+---
+title: "datos_api"
+author: "ronny hdez-mora"
+date: "February 9, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(junr)
+library(dplyr)
+```
+
+## Datos disponibles
+
+```{r}
+# Nuestras credenciales para hacer la conexión al api de la muni de San José
+url_base <- "http://api.datosabiertos.msj.go.cr/api/v2/datastreams/"
+api_key <- sanjose_api
+
+# Traemos el indice  de los datos que existen
+indice <- get_index(url_base, api_key = api_key)
+
+# Necesitamos el guid para hacer un llamado especifico a los datos
+guid <- indice %>% 
+  select(title, guid)
+
+# Por la cantidad de tablas que hay, esta funcion se demora mucho
+dimensiones <- get_dimensions(base_url = url_base, api_key = api_key)
+
+# Unir el titulo a dimensiones
+dimensiones <- left_join(dimensiones, guid, by = c("GUID" = "guid"))
+
+# Ordenar tablas con mayores dimensiones
+dim_ordenado <- dimensiones %>%
+    arrange(desc(DIM))
+
+# Exportar guia de tablas
+# feather::write_feather(dim_ordenado, "dim_tablas_munisj.feather")
+
+```
+
+## Elegir un conjunto de datos
+```{r}
+guid <- "ASIST-EDUCA-SUPER"
+asist_educacion <- get_data(base_url = url_base, api_key = api_key, guid = guid)
+```
+
+
+
+
