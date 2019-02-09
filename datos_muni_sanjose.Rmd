@@ -1,0 +1,139 @@
+---
+title: "¿Cómo conectarse a los datos abiertos de la muni de San José?"
+author: "ronny hdez-mora"
+date: "February 9, 2019"
+output: md_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(junr)
+library(dplyr)
+```
+
+## Datos disponibles
+
+Gracias a la iniciativa de [Gobierno Abierto](http://www.gobiernoabierto.go.cr/)
+de Costa Rica tenemos la posibilidad de obtener datos de diferentes entes a través
+de la conexión con API's.
+
+Esto nos da la posibilidad de no pasar por engorrosos procesos de limpiar datos
+a partir de formatos casi imposibles como pdf's, .csv extravagantes u otros
+formatos difíciles de trabajar.
+
+En este caso vamos a utilizar el lenguaje de programación R y el paquete 
+[junr](https://cran.r-project.org/web/packages/junr/index.html) de
+[Frans van Dunné](https://github.com/FvD) para conectarnos al API de la municipalidad
+de San José y revisar qué datos se encuentran disponibles.
+
+### Obtener el API key de la municipalidad de San José
+
+En la siguiente [dirección](http://datosabiertos.msj.go.cr/developers/) podrá encontrar el API key necesario para hacer el llamado.
+
+```{r, echo = FALSE}
+SU_API_KEY <- Sys.getenv("SU_API_KEY")
+```
+
+Vamos a crear como objetos nuestras credenciales para hacer la conexión al
+API de la municipalidad de San José. El url que aparece acá es el que se debe
+de usar para conectarnos al sistema de la muni de San José. Si están siguiendo
+ete ejemplo pueden escribir el mismo que aparece acá.
+```{r}
+url_base <- "http://api.datosabiertos.msj.go.cr/api/v2/datastreams/"
+api_key <- SU_API_KEY
+```
+
+### Obtener el indice de las tablas
+Ya que tenemos las credenciales listas (api key & url), vamos a revisar el
+índice de las tablas de datos que la municipalidad ha liberado:
+```{r}
+# Traemos el indice  de los datos que existen
+indice <- get_index(url_base, api_key = api_key)
+
+# Revisamos estructura del objeto 
+glimpse(indice)
+```
+
+Cada uno de los elementos que allí aparecen son distintas tablas que pueden
+tener diferentes dimensiones (filas y columnas). Es como una descripción de lo
+que trata cada tabla. Si queremos traer a nuestro entorno los datos de una tabla
+en específico tenemos que hacerlo con su **GUID**.
+
+De toda la tabla que llamamos en el paso anterior, vamos a hacer una selección
+de dos columnas: título y el GUID
+```{r}
+guid <- indice %>% 
+  select(title, guid)
+
+glimpse(guid)
+```
+
+### Obtener las dimensiones de las tablas
+Ahora bien, ya sabemos el título y el identificador de la tabla, pero tenemos
+que tener cuidado. Son muchas tablas y algunas pueden estar vacías, ser
+datos resumidos o con muy pocos datos que no nos servirían de nada.
+
+Por suerte el paquete **junr** tiene una función que nos muestra la dimensión
+de las tablas, lo cual nos da mayor información sobre las características que 
+tiene. 
+
+Hay que aclarar que la municipalidad de San José tiene muchas tablas y si usamos
+la función para obtener las dimensiones se puede demorar sus minutos.
+
+```{r dimensiones, cached = TRUE}
+# Por la cantidad de tablas que hay, esta funcion se demora mucho
+dimensiones <- get_dimensions(base_url = url_base, api_key = api_key)
+
+# Mostrar primeras seis observaciones
+head(dimensiones)
+```
+
+#### Cuadro con características de las tablas de la muni de SJ
+Ya que tenemos las dimensiones de las tablas, podemos acomodar la información
+que hemos extraido hasta el momento de tal manera que tengamos un cuadro final
+con la información importante resumida: el título de la tabla, el GUID y las
+dimensiones.
+
+```{r join, cached = TRUE, dependson = "dimensiones"}
+# Unir el titulo a dimensiones
+dimensiones <- left_join(dimensiones, guid, by = c("GUID" = "guid"))
+
+# Ordenar tablas con mayores dimensiones
+dim_ordenado <- dimensiones %>%
+    arrange(desc(DIM))
+
+# Revisar primeras entradas
+head(dim_ordenado)
+```
+
+### Llamar datos de una tabla específica:
+Ya con esto podemos hacer una mejor selección de las tablas que nos serían
+útiles. Cuando ya tengamos identificada una tabla tenemos que anotar su GUID que
+utilizaremos en la función:
+
+```{r}
+# Anotar en un objeto el GUID de la tabla que nos interesa
+guid_tabla <- "ASIST-EDUCA-SUPER"
+
+# Llamar la tabla. Usamos las mismas credenciales que habíamos usado
+asist_educacion <- get_data(base_url = url_base, api_key = SU_API_KEY, 
+                            guid = guid_tabla)
+```
+
+¡Listo! Ya tenemos nuestra tabla de interés con los datos. Vamos a revisarla
+```{r}
+head(asist_educacion)
+```
+
+```{r}
+glimpse(asist_educacion)
+```
+
+## Referencias
+
+ - [vignette del paquete junr](https://cran.r-project.org/web/packages/junr/vignettes/acceder-junar-api.html)
+ - [Página desarrolladores Municipalidad de San José](http://datosabiertos.msj.go.cr/developers/)
+ - [Gobierno abierto Costa Rica](http://www.gobiernoabierto.go.cr/)
+
