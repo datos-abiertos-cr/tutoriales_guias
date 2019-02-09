@@ -45,6 +45,7 @@ url_base <- "http://api.datosabiertos.msj.go.cr/api/v2/datastreams/"
 api_key <- SU_API_KEY
 ```
 
+### Obtener el indice de las tablas
 Ya que tenemos las credenciales listas (api key & url), vamos a revisar el
 índice de las tablas de datos que la municipalidad ha liberado:
 ```{r}
@@ -58,15 +59,35 @@ indice
 Cada uno de los elementos que allí aparecen son distintas tablas que pueden
 tener diferentes dimensiones (filas y columnas). Es como una descripción de lo
 que trata cada tabla. Si queremos traer a nuestro entorno los datos de una tabla
-en específico
+en específico tenemos que hacerlo con su **GUID**.
+
+De toda la tabla que llamamos en el paso anterior, vamos a hacer una selección
+de dos columnas: título y el GUID
 ```{r}
-# Necesitamos el guid para hacer un llamado especifico a los datos
 guid <- indice %>% 
   select(title, guid)
+```
 
+
+### Obtener las dimensiones de las tablas
+Ahora bien, ya sabemos el título y el identificador de la tabla, pero tenemos
+que tener cuidado. Son muchas tablas y algunas pueden estar vacías, ser
+datos resumidos o con muy pocos datos que no nos servirían de nada.
+
+Por suerte el paquete **junr** tiene una función que nos muestra la dimensión
+de las tablas, lo cual nos da mayor información sobre las características que 
+tiene. 
+
+Hay que aclarar que la municipalidad de San José tiene muchas tablas y si usamos
+la función para obtener las dimensiones se puede demorar sus minutos.
+
+```{r}
 # Por la cantidad de tablas que hay, esta funcion se demora mucho
 dimensiones <- get_dimensions(base_url = url_base, api_key = api_key)
+```
 
+
+```{r}
 # Unir el titulo a dimensiones
 dimensiones <- left_join(dimensiones, guid, by = c("GUID" = "guid"))
 
