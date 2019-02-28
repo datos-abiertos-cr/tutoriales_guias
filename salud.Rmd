@@ -21,6 +21,9 @@ library(readr)
 library(junr)
 library(dplyr)
 library(ggplot2)
+library(janitor)
+library(lubridate)
+library(kableExtra)
 ```
 
 # Comunicación con el API
@@ -51,7 +54,7 @@ dim_ordenado <- dimensiones %>%
     arrange(desc(DIM))
 ```
 
-### Traer conjunto de datos de salud
+## Traer conjunto de datos de salud
 Una vez identificado el conjunto de datos podemos anotar el GUID y con este
 hacer el llamado específico. En nuestro caso estamos interesados en el conjunto
 de datos **Base de datos RNT** y cuyo GUID es **BASE-DE-DATOS-RNT**
@@ -60,7 +63,72 @@ de datos **Base de datos RNT** y cuyo GUID es **BASE-DE-DATOS-RNT**
 guid_tabla <- "BASE-DE-DATOS-RNT"
 
 # Llamar la tabla. Usamos las mismas credenciales que habíamos usado
-asist_educacion <- get_data(base_url = url_base, api_key = api_key, 
+salud <- get_data(base_url = url_base, api_key = api_key, 
                             guid = guid_tabla)
 ```
+
+# **Exploración de datos de salud**
+
+En primer lugar hay que limpiar un poco el conjunto de datos, renombrar las
+variables, coercionar la columna de fechas
+```{r, cache = TRUE, echo = FALSE, message = FALSE}
+# TODO: fecha diagnostico esta en diferentes formatos
+salud <- clean_names(salud) %>% 
+  mutate(fecha_diagnostico = ymd(fecha_diagnostico)) %>%
+  mutate(fecha_registro = dmy(fecha_registro))
+```
+
+
+## Graficos desmadre
+```{r, cache = TRUE, echo = FALSE, message = FALSE}
+# Ver cuales son los tumores mas comunes:
+tumores_comunes <- salud %>% 
+  group_by(descrip_dx_clinico) %>% 
+  summarise(
+    total = n()
+  ) %>% 
+  arrange(desc(total)) %>% 
+  slice(1:10) %>% 
+  kable() %>% 
+  kable_styling("striped", full_width = F)
+
+tumores_comunes
+```
+
+```{r, cache = TRUE, echo = FALSE, message = FALSE}
+# Tumores comunes por provincia
+tumores_comunes <- salud %>% 
+  group_by(descrip_dx_clinico) %>% 
+  summarise(
+    total = n()
+  ) %>% 
+  arrange(desc(total)) %>% 
+  slice(1:10)
+
+salud %>% 
+  inner_join(y = tumores_comunes, by = "descrip_dx_clinico") %>%
+  ggplot(aes(x = sexo, fill = descrip_dx_clinico)) +
+  geom_bar() +
+  facet_wrap(~provincia) +
+  scale_fill_viridis_d() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_bw() +
+  ggtitle("Casos más comunes de tumores por provincia y sexo en CR para \n
+          periodo del 2014 - 2016")
+```
+
+```{r, cache = TRUE, echo = FALSE, message = FALSE}
+# Hospital con mayor cantidad de casos
+salud %>% 
+  group_by(nombre_establecimiento) %>% 
+  summarise(
+    total = n()
+  ) %>% 
+  arrange(desc())
+
+
+```
+
+
+
 
