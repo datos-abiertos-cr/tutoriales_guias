@@ -6,7 +6,6 @@ always_allow_html: yes
 output:
   html_document:
     code_folding: hide
-    number_sections: no
     theme: spacelab
     toc: yes
     toc_float:
@@ -32,7 +31,6 @@ disponibles y abiertos, tenemos que seguir una serie de pasos en nuestra sesión
 La que presentamos acá no es la única manera de hacerlo,  pero tratamos de 
 presentar un paso a paso que nos lleve a identificar fácilmente los conjuntos
 de datos existentes y cómo tener un vistazo rápido de las dimensiones.
-
 
 ## Credenciales
 Uno de los primeros paso es que debemos de crear como objetos las credenciales
@@ -77,7 +75,6 @@ salud <- clean_names(salud) %>%
   mutate(fecha_diagnostico = ymd(fecha_diagnostico)) %>%
   mutate(fecha_registro = dmy(fecha_registro))
 ```
-
 
 ## Graficos desmadre
 ```{r, cache = TRUE, echo = FALSE, message = FALSE}
@@ -124,10 +121,86 @@ salud %>%
   summarise(
     total = n()
   ) %>% 
-  arrange(desc())
+  arrange(desc(total)) %>% 
+  slice(1:20) %>% 
+  inner_join(salud, by = "nombre_establecimiento")  %>% 
+  ggplot(aes(x = nombre_establecimiento, fill = sexo)) +
+  geom_bar(position = "fill") +
+  scale_fill_viridis_d() +
+  coord_flip()
+```
 
+```{r}
+# Si fecha de diagnostico es cuando lo encontraron, fecha de registro
+# es de cuando se muere?
+
+salud <- salud %>% 
+  mutate(duracion = fecha_registro - fecha_diagnostico)
+
+# Tumores mas mortiferos
+salud %>% 
+  group_by(descrip_dx_clinico) %>% 
+  summarise(
+    media = mean(duracion)
+  ) %>% 
+  arrange(media) %>% 
+  slice(1:10) %>% 
+  ggplot(aes(x = descrip_dx_clinico, y = media)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_viridis_d() +
+  coord_flip()
+```
+
+```{r}
+# Tumores mas longevos
+salud %>% 
+  group_by(descrip_dx_clinico) %>% 
+  summarise(
+    media = mean(duracion)
+  ) %>% 
+  arrange(desc(media)) %>% 
+  slice(1:10) %>% 
+  ggplot(aes(x = descrip_dx_clinico, y = media, fill = )) + 
+  geom_bar(stat = "identity") +
+  scale_fill_viridis_d() +
+  coord_flip()
+```
+
+```{r}
+# Habra alguna manera de ver si hay tumores en que son atentidos
+# por un hospital y el caso mejora/empeora
+a <- salud %>% 
+  group_by(nombre_establecimiento, descrip_dx_clinico) %>% 
+  summarise(
+    media = mean(duracion),
+    total = n()
+  ) %>% 
+  arrange((total)) %>% 
+  filter(total != 1) %>% 
+  inner_join(salud, by = c("descrip_dx_clinico", "nombre_establecimiento"))
+  
 
 ```
+
+```{r}
+# Cantones con mas casos
+salud %>% 
+  group_by(canton) %>% 
+  summarise(
+    total = n()
+  ) %>% 
+  arrange(desc(total))
+
+salud %>% 
+  filter(canton == "SAN JOSE") %>% 
+  ggplot(aes(x = descrip_dx_clinico, fill = sexo)) + 
+  geom_bar() +
+  scale_fill_viridis_d() +
+  coord_flip()
+```
+
+
+
 
 
 
