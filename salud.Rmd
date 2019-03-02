@@ -35,14 +35,14 @@ de datos existentes y cómo tener un vistazo rápido de las dimensiones.
 ## Credenciales
 Uno de los primeros paso es que debemos de crear como objetos las credenciales
 para poder comunicarnos con el API de datos abiertos del Gobierno de CR.
-```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, cache = TRUE,  message = FALSE, warning = FALSE}
 url_base <- "http://api.datosabiertos.presidencia.go.cr/api/v2/datastreams/"
 api_key <- "a5fff4275119df5926a807941576f6cad95cf84f"
 
 ```
 
 ## Revisar cuales conjuntos de datos existen
-```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, cache = TRUE,  message = FALSE, warning = FALSE}
 indice <- get_index(url_base, api_key = api_key)
 
 guid <- indice %>% 
@@ -64,7 +64,7 @@ dim_ordenado
 Una vez identificado el conjunto de datos podemos anotar el GUID y con este
 hacer el llamado específico. En nuestro caso estamos interesados en el conjunto
 de datos **Base de datos RNT** y cuyo GUID es **BASE-DE-DATOS-RNT**
-```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, cache = TRUE,  message = FALSE, warning = FALSE}
 # Anotar en un objeto el GUID de la tabla que nos interesa
 guid_tabla <- "BASE-DE-DATOS-RNT"
 
@@ -77,7 +77,7 @@ salud <- get_data(base_url = url_base, api_key = api_key,
 
 En primer lugar hay que limpiar un poco el conjunto de datos, renombrar las
 variables, coercionar la columna de fechas
-```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, cache = TRUE,  message = FALSE, warning = FALSE}
 # TODO: fecha diagnostico esta en diferentes formatos
 salud <- clean_names(salud) %>% 
   mutate(fecha_diagnostico = ymd(fecha_diagnostico)) %>%
@@ -88,7 +88,7 @@ salud <- clean_names(salud) %>%
 Una vez que tenemos los datos podemos hacer exploraciones donde agrupamos las
 observaciones por alguna categoría, en este caso de la columna 
 __descrip_dx_clinico__ y el total de casos que existen:
-```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, cache = TRUE,  message = FALSE, warning = FALSE}
 # Ver cuales son los tumores mas comunes:
 tumores_comunes <- salud %>% 
   group_by(descrip_dx_clinico) %>% 
@@ -107,7 +107,7 @@ tumores_comunes
 Ahora bien, ya que tenemos cuáles son los tumores más comunes en el conjunto
 de datos, podríamos filtrar los diez primeros para visualizar los casos
 totales por provincia separado por el sexo
-```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE, fig.align = 'center'}
+```{r, cache = TRUE,  message = FALSE, warning = FALSE, fig.align = 'center'}
 # Tumores comunes por provincia
 tumores_comunes <- salud %>% 
   group_by(descrip_dx_clinico) %>% 
@@ -133,7 +133,7 @@ salud %>%
 Los 20 hospitales con mayor número de casos han sido seleccionados y con estos
 hemos revisadolas proporciones por sexo que presenta cada uno:
 
-```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE, ig.align = 'center'}
+```{r, cache = TRUE, message = FALSE, warning = FALSE, fig.align = 'center'}
 # Hospital con mayor cantidad de casos
 salud %>% 
   group_by(nombre_establecimiento) %>% 
