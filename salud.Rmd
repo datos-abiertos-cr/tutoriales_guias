@@ -35,28 +35,36 @@ de datos existentes y cómo tener un vistazo rápido de las dimensiones.
 ## Credenciales
 Uno de los primeros paso es que debemos de crear como objetos las credenciales
 para poder comunicarnos con el API de datos abiertos del Gobierno de CR.
-```{r, cache = TRUE, echo = FALSE, message = FALSE}
+```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 url_base <- "http://api.datosabiertos.presidencia.go.cr/api/v2/datastreams/"
 api_key <- "a5fff4275119df5926a807941576f6cad95cf84f"
 
 ```
 
 ## Revisar cuales conjuntos de datos existen
-```{r, cache = TRUE, echo = FALSE, message = FALSE}
+```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 indice <- get_index(url_base, api_key = api_key)
+
 guid <- indice %>% 
   select(title, guid)
+
 dimensiones <- get_dimensions(base_url = url_base, api_key = api_key)
+
 dimensiones <- left_join(dimensiones, guid, by = c("GUID" = "guid"))
+
 dim_ordenado <- dimensiones %>%
-    arrange(desc(DIM))
+    arrange(desc(DIM)) %>% 
+  kable() %>% 
+  kable_styling("striped", full_width = F)
+
+dim_ordenado
 ```
 
 ## Traer conjunto de datos de salud
 Una vez identificado el conjunto de datos podemos anotar el GUID y con este
 hacer el llamado específico. En nuestro caso estamos interesados en el conjunto
 de datos **Base de datos RNT** y cuyo GUID es **BASE-DE-DATOS-RNT**
-```{r, cache = TRUE, echo = FALSE, message = FALSE}
+```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 # Anotar en un objeto el GUID de la tabla que nos interesa
 guid_tabla <- "BASE-DE-DATOS-RNT"
 
@@ -69,15 +77,18 @@ salud <- get_data(base_url = url_base, api_key = api_key,
 
 En primer lugar hay que limpiar un poco el conjunto de datos, renombrar las
 variables, coercionar la columna de fechas
-```{r, cache = TRUE, echo = FALSE, message = FALSE}
+```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 # TODO: fecha diagnostico esta en diferentes formatos
 salud <- clean_names(salud) %>% 
   mutate(fecha_diagnostico = ymd(fecha_diagnostico)) %>%
   mutate(fecha_registro = dmy(fecha_registro))
 ```
 
-## Graficos desmadre
-```{r, cache = TRUE, echo = FALSE, message = FALSE}
+## **Tumores más  comunes en el conjunto de datos**
+Una vez que tenemos los datos podemos hacer exploraciones donde agrupamos las
+observaciones por alguna categoría, en este caso de la columna 
+__descrip_dx_clinico__ y el total de casos que existen:
+```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 # Ver cuales son los tumores mas comunes:
 tumores_comunes <- salud %>% 
   group_by(descrip_dx_clinico) %>% 
@@ -92,7 +103,11 @@ tumores_comunes <- salud %>%
 tumores_comunes
 ```
 
-```{r, cache = TRUE, echo = FALSE, message = FALSE}
+## **Tumores más comunes por provincia de Costa Rica**
+Ahora bien, ya que tenemos cuáles son los tumores más comunes en el conjunto
+de datos, podríamos filtrar los diez primeros para visualizar los casos
+totales por provincia separado por el sexo
+```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE, fig.align = 'center'}
 # Tumores comunes por provincia
 tumores_comunes <- salud %>% 
   group_by(descrip_dx_clinico) %>% 
@@ -109,12 +124,16 @@ salud %>%
   facet_wrap(~provincia) +
   scale_fill_viridis_d() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  theme_bw() +
+  # theme_bw() +
   ggtitle("Casos más comunes de tumores por provincia y sexo en CR para \n
           periodo del 2014 - 2016")
 ```
 
-```{r, cache = TRUE, echo = FALSE, message = FALSE}
+## **Proporción de sexos por hospital**
+Los 20 hospitales con mayor número de casos han sido seleccionados y con estos
+hemos revisadolas proporciones por sexo que presenta cada uno:
+
+```{r, cache = TRUE, echo = FALSE, message = FALSE, warning = FALSE, ig.align = 'center'}
 # Hospital con mayor cantidad de casos
 salud %>% 
   group_by(nombre_establecimiento) %>% 
@@ -130,74 +149,13 @@ salud %>%
   coord_flip()
 ```
 
-```{r}
-# Si fecha de diagnostico es cuando lo encontraron, fecha de registro
-# es de cuando se muere?
 
-salud <- salud %>% 
-  mutate(duracion = fecha_registro - fecha_diagnostico)
 
-# Tumores mas mortiferos
-salud %>% 
-  group_by(descrip_dx_clinico) %>% 
-  summarise(
-    media = mean(duracion)
-  ) %>% 
-  arrange(media) %>% 
-  slice(1:10) %>% 
-  ggplot(aes(x = descrip_dx_clinico, y = media)) + 
-  geom_bar(stat = "identity") +
-  scale_fill_viridis_d() +
-  coord_flip()
-```
 
-```{r}
-# Tumores mas longevos
-salud %>% 
-  group_by(descrip_dx_clinico) %>% 
-  summarise(
-    media = mean(duracion)
-  ) %>% 
-  arrange(desc(media)) %>% 
-  slice(1:10) %>% 
-  ggplot(aes(x = descrip_dx_clinico, y = media, fill = )) + 
-  geom_bar(stat = "identity") +
-  scale_fill_viridis_d() +
-  coord_flip()
-```
 
-```{r}
-# Habra alguna manera de ver si hay tumores en que son atentidos
-# por un hospital y el caso mejora/empeora
-a <- salud %>% 
-  group_by(nombre_establecimiento, descrip_dx_clinico) %>% 
-  summarise(
-    media = mean(duracion),
-    total = n()
-  ) %>% 
-  arrange((total)) %>% 
-  filter(total != 1) %>% 
-  inner_join(salud, by = c("descrip_dx_clinico", "nombre_establecimiento"))
-  
 
-```
 
-```{r}
-# Cantones con mas casos
-salud %>% 
-  group_by(canton) %>% 
-  summarise(
-    total = n()
-  ) %>% 
-  arrange(desc(total))
 
-salud %>% 
-  filter(canton == "SAN JOSE") %>% 
-  ggplot(aes(x = descrip_dx_clinico, fill = sexo)) + 
-  geom_bar() +
-  scale_fill_viridis_d() +
-  coord_flip()
-```
 
 
 
