@@ -1,0 +1,74 @@
+---
+title: "Exploracion Licitaciones"
+author: "Erick Calderon & Ronny Hdez-Mora"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+always_allow_html: yes
+output:
+  html_document:
+    code_folding: hide
+    theme: spacelab
+    toc: yes
+    toc_float:
+      collapsed: no
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(junr)
+library(dplyr)
+library(ggplot2)
+library(janitor)
+library(lubridate)
+library(kableExtra)
+library(jsonlite)
+```
+
+## Credenciales
+Uno de los primeros paso es que debemos de crear como objetos las credenciales
+para poder comunicarnos con el API de datos abiertos del Gobierno de CR.
+```{r, cache = TRUE,  message = FALSE, warning = FALSE}
+url_base <- "http://api.datosabiertos.presidencia.go.cr/api/v2/datastreams/"
+api_key <- "a5fff4275119df5926a807941576f6cad95cf84f"
+```
+
+## Obtener conjunto de datos
+
+```{r}
+get_data_b <- function(base_url, api_key, guid) {
+if (missing(base_url)) {
+warning("Please add a valid base URL")
+} else if (missing(api_key)) {
+warning("Please add a valid API key for the base URL you are trying to access")
+} else if (missing(guid)) {
+warning("Please add a valid GUID for the dataset you are trying to access")
+} else
+try({
+
+  r_pjson <- fromJSON(paste(base_url, guid, "/data.pjson/","?auth_key=", api_key, sep = ""))
+  df <- r_pjson$result
+  return(df)
+})
+
+}
+```
+
+```{r, cache = TRUE,  message = FALSE, warning = FALSE}
+# Anotar en un objeto el GUID de la tabla que nos interesa
+guid_tabla <- "LICIT-ADJUD-DE-LAS-INSTI"
+
+# Llamar la tabla. Usamos las mismas credenciales que habíamos usado
+licitaciones <- get_data_b(base_url = url_base, api_key = api_key, 
+                            guid = guid_tabla)
+```
+
+
+```{r objeto a feather}
+feather::write_feather(licitaciones, "datos/licitaciones.feather")
+```
+
+
+
+
