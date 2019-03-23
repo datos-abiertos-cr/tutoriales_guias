@@ -26,6 +26,10 @@ library(kableExtra)
 library(jsonlite)
 ```
 
+# Datos
+
+El conjunto de datos que analizamos corresponde a **Licitaciones Adjudicadas de las Instituciones Públicas para el período 2014-2015**
+
 ## Credenciales
 Uno de los primeros paso es que debemos de crear como objetos las credenciales
 para poder comunicarnos con el API de datos abiertos del Gobierno de CR.
@@ -62,13 +66,81 @@ guid_tabla <- "LICIT-ADJUD-DE-LAS-INSTI"
 # Llamar la tabla. Usamos las mismas credenciales que habíamos usado
 licitaciones <- get_data_b(base_url = url_base, api_key = api_key, 
                             guid = guid_tabla)
+
+licitaciones <- licitaciones %>% 
+  clean_names() %>% 
+  mutate(monto_adjudicado = str_replace(monto_adjudicado, pattern = ",", replacement = "")) %>% 
+  mutate(monto_adjudicado = as.numeric(monto_adjudicado))
+
+stopifnot(length(is.na(licitaciones$monto_adjudicado)) == 103472)
 ```
 
 
-```{r objeto a feather}
+```{r objeto a feather, eval = FALSE, echo = FALSE}
 feather::write_feather(licitaciones, "datos/licitaciones.feather")
+licitaciones <- feather::read_feather("datos/licitaciones.feather")
 ```
 
+
+# Exploracion
+
+Vistazo del conjunto de datos
+```{r}
+glimpse(licitaciones)
+```
+
+Cuantas observaciones aparecen por institucion en este conjunto de datos
+```{r}
+#TODO//: Buscar porque esto no mantiene el arrange
+# licitaciones %>% 
+#   group_by(institucion) %>% 
+#   count() %>% 
+#   arrange(desc(n)) %>% 
+#   slice(1:30) %>% 
+#   kable() %>% 
+#   kable_styling(bootstrap_options = c("striped", "hover"))
+  
+licitaciones %>% 
+  group_by(institucion) %>% 
+  summarise(
+    total = n()
+  ) %>% 
+  arrange(desc(total)) %>% 
+  slice(1:30) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+Cuales han sido las instituciones con mayores montos adjudicados
+```{r}
+licitaciones %>% 
+  group_by(institucion) %>% 
+  summarise(
+    total = n(),
+    monto = sum(monto_adjudicado, na.rm = TRUE)
+    # relativo = total / monto
+  ) %>% 
+  arrange(desc(monto))
+```
+
+Cantidad de proveedores que aparecen en el conjunto de datos
+```{r}
+licitaciones %>% 
+  group_by(proveedor_adjudicado) %>% 
+  count() %>% 
+  arrange(desc(n))
+```
+
+Cuales son los proveedores que mayores ocasiones han obtenido una licitacion
+```{r}
+licitaciones %>% 
+  group_by(proveedor_adjudicado, monedda) %>% 
+  summarise(
+    total = n(),
+    monto = sum(monto_adjudicado, na.rm = TRUE)
+  ) %>% 
+  arrange(desc(total))
+```
 
 
 
