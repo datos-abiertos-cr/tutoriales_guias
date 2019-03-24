@@ -25,6 +25,7 @@ library(janitor)
 library(lubridate)
 library(kableExtra)
 library(jsonlite)
+library(stringr)
 ```
 
 # Datos
@@ -69,10 +70,11 @@ licitaciones <- get_data_b(base_url = url_base, api_key = api_key,
                             guid = guid_tabla)
 
 licitaciones <- licitaciones %>% 
-  clean_names() %>% 
-  mutate(monto_adjudicado = str_replace(monto_adjudicado, pattern = ",", replacement = "")) %>% 
-  mutate(monto_adjudicado = as.numeric(monto_adjudicado)) %>% 
-  mutate(fecha_de_adjudicacion = mdy(fecha_de_adjudicacion))
+  clean_names() %>%
+  mutate(monto_adjudicado = str_replace(monto_adjudicado, pattern = ",", replacement = "")) %>%
+  mutate(monto_adjudicado = as.numeric(monto_adjudicado)) %>%
+  #TODO//: Hay fechas con diferentes formatos, revisar
+  # mutate(fecha_de_adjudicacion = mdy(fecha_de_adjudicacion))
 
 stopifnot(length(is.na(licitaciones$monto_adjudicado)) == 103472)
 ```
@@ -227,3 +229,5 @@ ggplot(mayores_proveedores, aes(x = fecha_de_adjudicacion, y = monto_adjudicado,
 ```
 
 # Comportamiento a traves del tiempo por los cinco mayores instituciones
+
+
