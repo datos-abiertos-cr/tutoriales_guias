@@ -16,6 +16,7 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
 library(readr)
 library(junr)
 library(dplyr)
@@ -70,7 +71,8 @@ licitaciones <- get_data_b(base_url = url_base, api_key = api_key,
 licitaciones <- licitaciones %>% 
   clean_names() %>% 
   mutate(monto_adjudicado = str_replace(monto_adjudicado, pattern = ",", replacement = "")) %>% 
-  mutate(monto_adjudicado = as.numeric(monto_adjudicado))
+  mutate(monto_adjudicado = as.numeric(monto_adjudicado)) %>% 
+  mutate(fecha_de_adjudicacion = mdy(fecha_de_adjudicacion))
 
 stopifnot(length(is.na(licitaciones$monto_adjudicado)) == 103472)
 ```
@@ -80,7 +82,6 @@ stopifnot(length(is.na(licitaciones$monto_adjudicado)) == 103472)
 feather::write_feather(licitaciones, "datos/licitaciones.feather")
 licitaciones <- feather::read_feather("datos/licitaciones.feather")
 ```
-
 
 # Exploracion
 
@@ -139,8 +140,82 @@ licitaciones %>%
     total = n(),
     monto = sum(monto_adjudicado, na.rm = TRUE)
   ) %>% 
-  arrange(desc(total))
+  arrange(desc(monto))
+```
+
+Licitaciones por fechas
+```{r}
+ggplot(licitaciones, aes(x = fecha_de_adjudicacion, fill = monedda, colour = monedda)) + 
+  geom_bar() + 
+  scale_colour_viridis_d() + 
+  scale_fill_viridis_d() + 
+  scale_x_date(date_breaks = "1 month") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+# Montos por fechas:
+```{r}
+# separacion dolares y colones
+licitaciones_usd <- licitaciones %>% 
+  filter(monedda == "USD")
+
+ggplot(licitaciones, aes(x = fecha_de_adjudicacion)) + 
+  geom_bar()
+```
+
+```{r}
+# separacion dolares y colones
+licitaciones_crc <- licitaciones %>% 
+  filter(monedda == "CRC")
+
+ggplot(licitaciones, aes(x = fecha_de_adjudicacion)) + 
+  geom_bar()
+```
+
+# Comportamiento a traves del tiempo por los cinco mayores proovedores
+
+## USD
+```{r}
+# Cuales mayores proveedores en dolares
+licitaciones %>% 
+  filter(monedda == "USD") %>% 
+  group_by(proveedor_adjudicado) %>% 
+  summarise(
+    total = n(),
+    monto = sum(monto_adjudicado, na.rm = TRUE)
+  ) %>% 
+  arrange(desc(monto))
+  
+# Seleccion de mayores proveedores
+mayores_proveedores <- licitaciones %>%
+  filter(monedda == "USD" & proveedor_adjudicado == c("PURDY MOTOR S. A.",
+                                                      "LUTZ HERMANOS Y COMPAÑIA, LTDA.",
+                                                      "COMPONENTES EL ORBE S.A.",
+                                                      "Nutri Med S.A.",
+                                                      "HOSPIMEDICA S. A.")) 
+
+# Grafico con esa seleccion de mayores proveedores en dolares
+ggplot(mayores_proveedores, aes(x = fecha_de_adjudicacion, y = monto_adjudicado, colour = proveedor_adjudicado)) + 
+  # geom_bar(stat = "identity") +
+  geom_point(size = 2) + 
+  # scale_colour_viridis_d() + 
+  scale_colour_viridis_d() + 
+  scale_x_date(date_breaks = "1 month") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90))  
+  # facet_wrap(~ proveedor_adjudicado)
 ```
 
 
+## CRC
+```{r}
+mayores_proveedores <- licitaciones %>%
+  filter(monedda == "USD" | proveedor_adjudicado == c("Jimenez y Tanzi S. A.",
+                                                      "Fesa Formas Eficientes S.A.",
+                                                      "INDIANAPOLIS S.A.",
+                                                      "ABONOS AGRO S. A.",
+                                                      "Distribuidora Ramirez y Castillo S. A.")) 
+```
 
+# Comportamiento a traves del tiempo por los cinco mayores instituciones
