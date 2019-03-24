@@ -211,11 +211,19 @@ ggplot(mayores_proveedores, aes(x = fecha_de_adjudicacion, y = monto_adjudicado,
 ## CRC
 ```{r}
 mayores_proveedores <- licitaciones %>%
-  filter(monedda == "USD" | proveedor_adjudicado == c("Jimenez y Tanzi S. A.",
+  filter(monedda == "CRC" | proveedor_adjudicado == c("Jimenez y Tanzi S. A.",
                                                       "Fesa Formas Eficientes S.A.",
                                                       "INDIANAPOLIS S.A.",
                                                       "ABONOS AGRO S. A.",
                                                       "Distribuidora Ramirez y Castillo S. A.")) 
+
+# Grafico con esa seleccion de mayores proveedores en dolares
+ggplot(mayores_proveedores, aes(x = fecha_de_adjudicacion, y = monto_adjudicado, colour = proveedor_adjudicado)) + 
+  geom_point(size = 2) + 
+  scale_colour_viridis_d() + 
+  scale_x_date(date_breaks = "1 month") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90))  
 ```
 
 # Comportamiento a traves del tiempo por los cinco mayores instituciones
