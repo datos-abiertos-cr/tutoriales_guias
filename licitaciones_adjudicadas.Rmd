@@ -62,16 +62,10 @@ licitaciones <- get_data(base_url = url_base, api_key = api_key,
                          guid = guid_tabla, stream = "unlimited")
 ```
 
-
-```{r objeto a feather, echo = FALSE}
-# feather::write_feather(licitaciones, "datos/licitaciones.feather")
-# licitaciones <- feather::read_feather("datos/licitaciones.feather")
-```
-
 # Exploración
 
 ## **Vistazo del conjunto de datos**
-```{r}
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 glimpse(licitaciones)
 ```
 
@@ -97,11 +91,11 @@ con cuidad porque hay comas que separan los miles y puntos que separan decimales
 Con lo observado anteriormente vamos a empezar a darle forma al conjunto de datos
 para que en una exploración de los datos nos sea fácil hacer la manipulación
 
-####  Limpiar nombres
+###  Limpiar nombres
 El primer paso que vamos a realizar es limpiar los nombres a un estilo que sea
 mejor para trabajar:
 
-```{r}
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 # Limpiamos nombres
 licitaciones <- licitaciones %>% 
   janitor::clean_names()
@@ -110,21 +104,27 @@ licitaciones <- licitaciones %>%
 names(licitaciones)
 ```
 
+### Eliminar columnas con NA's
 
-#### Coerciones
+```{r}
+licitaciones <- licitaciones %>% 
+  select(-timestamp, -length)
+```
+
+### Coerciones
 Mencionamos que las columnas que contienen fechas deben de estar como fechas y no
 como character. Así mismo lo que contiene valores numéricos debe de coercinarse
 a numérico.
 
 Con las fechas los primeros valores parecen indicar que tienen la estructura de
 mes/día/año por lo que vamos a usar la función de _lubridate_ `mdy`
-```{r}
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 # Coercionar fechas
 licitaciones <- licitaciones %>%
   mutate(fecha_de_adjudicacion = lubridate::mdy(fecha_de_adjudicacion))
 
 # Corroborar que no se formaron NA's
-any(is.na(fecha$fecha_de_adjudicacion))
+any(is.na(licitaciones$fecha_de_adjudicacion))
 ```
 
 Efectivamente se formaron NA's. Esto quiere decir que en el conjunto de datos las
@@ -134,16 +134,54 @@ Revisemos los NA para dimensionar el impacto de la transformación en el conjunt
 de datos. Lo primero es que vamos a revisar cuántos NA se formaron luego de hacer
 la coerción:
 
-```{r}
-sum(is.na(fecha$fecha_de_adjudicacion))
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+sum(is.na(licitaciones$fecha_de_adjudicacion))
 ```
 
 ¡Bien! Sólo hay una observación de 103472 por lo que podemos prescindir de esta.
 
-```{r}
+Ahora vamos a coercionar la columna monto_adjudicado, la cual está como character.
+Para hacerlo hay un paso más que debemos de realizar, ya que los datos fueron 
+ingresados en un formato que es difícil de trabajar en R. En los valores, para
+separar los miles se ingresaron comas, las cuales tenemos que eliminar previo
+a hacer la coerción a numérico.
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+# Coerción y eliminacion de coma
 licitaciones$monto_adjudicado <-  as.numeric(gsub(",", "", licitaciones$monto_adjudicado))
 
+# Revisar resultado
+glimpse(licitaciones)
 ```
+
+### Separar adjudicaciones en colones y dolares
+Recordemos que tenemos montos que representan la moneda colones (CRC) y otros
+que son dólares (USD). Tenemos dos soluciones: hacer la conversión o hacer dos
+objetos por separado.
+
+La primera solucion implica tener que revisar datos del tipo de cambio para cada
+fecha. Es factible pero por el momento vamos a optar por la segunda opción.
+```{r}
+# Hacer el filtro de la columna monedda por sólo dólares:
+adjudicaciones_dolares <- licitaciones %>% 
+  filter(monedda == "USD")
+
+# Revisar subconjunto de datos:
+glimpse(adjudicaciones_dolares)
+```
+
+¡Listo! Lo que podemos ver es que hay 10169 observaciones de adjudicaciones en
+dolares. Ahora hacemos lo mismo pero para colones:
+```{r}
+# Hacer el filtro de la columna monedda por sólo colones:
+adjudicaciones_colones <- licitaciones %>% 
+  filter(monedda == "CRC")
+
+# Revisar subconjunto de datos:
+glimpse(adjudicaciones_colones)
+```
+
+
+
 
 
 
