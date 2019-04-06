@@ -62,7 +62,7 @@ licitaciones <- get_data(base_url = url_base, api_key = api_key,
                          guid = guid_tabla, stream = "unlimited")
 ```
 
-# Exploración
+# Estructura datos
 
 ## **Vistazo del conjunto de datos**
 ```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
@@ -160,7 +160,7 @@ objetos por separado.
 
 La primera solucion implica tener que revisar datos del tipo de cambio para cada
 fecha. Es factible pero por el momento vamos a optar por la segunda opción.
-```{r}
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 # Hacer el filtro de la columna monedda por sólo dólares:
 adjudicaciones_dolares <- licitaciones %>% 
   filter(monedda == "USD")
@@ -171,7 +171,7 @@ glimpse(adjudicaciones_dolares)
 
 ¡Listo! Lo que podemos ver es que hay 10169 observaciones de adjudicaciones en
 dolares. Ahora hacemos lo mismo pero para colones:
-```{r}
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 # Hacer el filtro de la columna monedda por sólo colones:
 adjudicaciones_colones <- licitaciones %>% 
   filter(monedda == "CRC")
@@ -180,7 +180,51 @@ adjudicaciones_colones <- licitaciones %>%
 glimpse(adjudicaciones_colones)
 ```
 
+# **EDA**
 
+### Instituciones con mayores montos adjudicados en colones
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+adjudicaciones_colones %>% 
+  group_by(institucion) %>% 
+  summarise(
+    total = n()
+  ) %>% 
+  arrange(desc(total)) %>% 
+  slice(1:30) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Proveedores con mayor cantidad de veces adjudicados
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+licitaciones %>% 
+  group_by(proveedor_adjudicado) %>% 
+  count() %>% 
+  arrange(desc(n))
+```
+
+### Proveedores con mayores montons adjudicados en colones
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+adjudicaciones_colones %>% 
+  group_by(proveedor_adjudicado) %>% 
+  summarise(
+    total = n(),
+    monto = sum(monto_adjudicado, na.rm = TRUE)
+  ) %>% 
+  arrange(desc(monto))
+```
+
+### Montos adjudicados en colones a través del tiempo
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+ggplot(adjudicaciones_colones, aes(x = fecha_de_adjudicacion, y = monto_adjudicado)) + 
+  # geom_bar(stat = "identity") + 
+  geom_smooth() +
+  scale_colour_viridis_d() + 
+  scale_fill_viridis_d() + 
+  scale_x_date(date_breaks = "1 month") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90))
+```
 
 
 
