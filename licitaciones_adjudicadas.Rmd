@@ -1,11 +1,10 @@
 ---
-title: "Exploracion Licitaciones"
+title: "Ingestión Licitaciones"
 author: "Erick Calderon & Ronny Hdez-Mora"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 always_allow_html: yes
 output:
   html_document:
-    code_folding: hide
     theme: spacelab
     toc: yes
     toc_float:
@@ -28,206 +27,76 @@ library(jsonlite)
 library(stringr)
 ```
 
-# Datos
+# **Datos**
 
-El conjunto de datos que analizamos corresponde a **Licitaciones Adjudicadas de las Instituciones Públicas para el período 2014-2015**
+El conjunto de datos que analizamos corresponde a **Licitaciones Adjudicadas de las Instituciones Públicas para el período 2014-2015**. Estos se encuentran en la
+dirección web del gobierno de Costa Rica en este [enlace](http://datosabiertos.presidencia.go.cr/dataviews/112440/licitaciones-adjudicadas-de-las-instituciones-publicas-para-el-periodo-2014-2015/)
 
-## Credenciales
+## **Credenciales**
 Uno de los primeros paso es que debemos de crear como objetos las credenciales
 para poder comunicarnos con el API de datos abiertos del Gobierno de CR.
-```{r, cache = TRUE,  message = FALSE, warning = FALSE}
+```{r credenciales, echo = TRUE, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 url_base <- "http://api.datosabiertos.presidencia.go.cr/api/v2/datastreams/"
 api_key <- "a5fff4275119df5926a807941576f6cad95cf84f"
 ```
 
-## Obtener conjunto de datos
+## **Obtener conjunto de datos**
 
-```{r}
-get_data_b <- function(base_url, api_key, guid) {
-if (missing(base_url)) {
-warning("Please add a valid base URL")
-} else if (missing(api_key)) {
-warning("Please add a valid API key for the base URL you are trying to access")
-} else if (missing(guid)) {
-warning("Please add a valid GUID for the dataset you are trying to access")
-} else
-try({
+El cconjunto de datos tal cual como se muestra en la página aparenta tener
+103472 observaciones, sin embargo cuando hacemos uso de la función `get_data()`
+nos trae muchas menos observaciones.
 
-  r_pjson <- fromJSON(paste(base_url, guid, "/data.pjson/","?auth_key=", api_key, sep = ""))
-  df <- r_pjson$result
-  return(df)
-})
+Esto sucede para prevenir que existan afectaciones en el motor del API Junar.Por
+ende, si queremos hacer una exploración inicial para comprender los datos y su
+estructura, lo mejor es **no superar el límite**.
 
-}
-```
+En el momento que queramos obtener todos los datos, podemos usar el argumento
+`stream = "unlimited"`. De  nuevo, este parámetro hay que usarlo con precaución.
 
-```{r, cache = TRUE,  message = FALSE, warning = FALSE}
+```{r conexion api, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 # Anotar en un objeto el GUID de la tabla que nos interesa
 guid_tabla <- "LICIT-ADJUD-DE-LAS-INSTI"
 
 # Llamar la tabla. Usamos las mismas credenciales que habíamos usado
-licitaciones <- get_data_b(base_url = url_base, api_key = api_key, 
-                            guid = guid_tabla)
-
-licitaciones <- licitaciones %>% 
-  clean_names() %>%
-  mutate(monto_adjudicado = str_replace(monto_adjudicado, pattern = ",", replacement = "")) %>%
-  mutate(monto_adjudicado = as.numeric(monto_adjudicado)) %>%
-  #TODO//: Hay fechas con diferentes formatos, revisar
-  # mutate(fecha_de_adjudicacion = mdy(fecha_de_adjudicacion))
-
-stopifnot(length(is.na(licitaciones$monto_adjudicado)) == 103472)
+licitaciones <- get_data(base_url = url_base, api_key = api_key,
+                         guid = guid_tabla, stream = "unlimited")
 ```
 
 
-```{r objeto a feather, eval = FALSE, echo = FALSE}
-feather::write_feather(licitaciones, "datos/licitaciones.feather")
-licitaciones <- feather::read_feather("datos/licitaciones.feather")
+```{r objeto a feather, echo = FALSE}
+# feather::write_feather(licitaciones, "datos/licitaciones.feather")
+# licitaciones <- feather::read_feather("datos/licitaciones.feather")
 ```
 
-# Exploracion
+# Exploración
 
-Vistazo del conjunto de datos
+## **Vistazo del conjunto de datos**
 ```{r}
 glimpse(licitaciones)
 ```
 
-Cuantas observaciones aparecen por institucion en este conjunto de datos
-```{r}
-#TODO//: Buscar porque esto no mantiene el arrange
-# licitaciones %>% 
-#   group_by(institucion) %>% 
-#   count() %>% 
-#   arrange(desc(n)) %>% 
-#   slice(1:30) %>% 
-#   kable() %>% 
-#   kable_styling(bootstrap_options = c("striped", "hover"))
-  
-licitaciones %>% 
-  group_by(institucion) %>% 
-  summarise(
-    total = n()
-  ) %>% 
-  arrange(desc(total)) %>% 
-  slice(1:30) %>% 
-  kable() %>% 
-  kable_styling(bootstrap_options = c("striped", "hover"))
-```
+**¿Qué observamos del conjunto de datos?**
 
-Cuales han sido las instituciones con mayores montos adjudicados
-```{r}
-licitaciones %>% 
-  group_by(institucion) %>% 
-  summarise(
-    total = n(),
-    monto = sum(monto_adjudicado, na.rm = TRUE)
-    # relativo = total / monto
-  ) %>% 
-  arrange(desc(monto))
-```
+- Hay una columna que indica la moneda. Es importante tomar esto en cuenta para la exploración y análisis  para separar las licitaciones por colones o dólares.
 
-Cantidad de proveedores que aparecen en el conjunto de datos
-```{r}
-licitaciones %>% 
-  group_by(proveedor_adjudicado) %>% 
-  count() %>% 
-  arrange(desc(n))
-```
+- Otro punto a destacar son dos columnas que parecen ser NA's, por lo cual si no
+tienen información podríamos deshacernos de estas.
 
-Cuales son los proveedores que mayores ocasiones han obtenido una licitacion
-```{r}
-licitaciones %>% 
-  group_by(proveedor_adjudicado, monedda) %>% 
-  summarise(
-    total = n(),
-    monto = sum(monto_adjudicado, na.rm = TRUE)
-  ) %>% 
-  arrange(desc(monto))
-```
+- La columna fecha hay que coercionarla a clase fecha ya que se encuentra como 
+character. Esto lo podremos trabajar con el paquete _lubridate_
 
-Licitaciones por fechas
-```{r}
-ggplot(licitaciones, aes(x = fecha_de_adjudicacion, fill = monedda, colour = monedda)) + 
-  geom_bar() + 
-  scale_colour_viridis_d() + 
-  scale_fill_viridis_d() + 
-  scale_x_date(date_breaks = "1 month") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90))
-```
+- Para mayor facilidad a la hora de manipular las variables podríamos limpiarlos
+con la función `clean_names()` del paquete _janitor_.
 
-# Montos por fechas:
-```{r}
-# separacion dolares y colones
-licitaciones_usd <- licitaciones %>% 
-  filter(monedda == "USD")
+- Año es una columna que parece ser inútil ya que tenemos una columna con la fecha.
 
-ggplot(licitaciones, aes(x = fecha_de_adjudicacion)) + 
-  geom_bar()
-```
+- La columna de monto adjudicado hay que coercionarla a numerico. Debe de hacerse
+con cuidad porque hay comas que separan los miles y puntos que separan decimales.
 
-```{r}
-# separacion dolares y colones
-licitaciones_crc <- licitaciones %>% 
-  filter(monedda == "CRC")
-
-ggplot(licitaciones, aes(x = fecha_de_adjudicacion)) + 
-  geom_bar()
-```
-
-# Comportamiento a traves del tiempo por los cinco mayores proovedores
-
-## USD
-```{r}
-# Cuales mayores proveedores en dolares
-licitaciones %>% 
-  filter(monedda == "USD") %>% 
-  group_by(proveedor_adjudicado) %>% 
-  summarise(
-    total = n(),
-    monto = sum(monto_adjudicado, na.rm = TRUE)
-  ) %>% 
-  arrange(desc(monto))
-  
-# Seleccion de mayores proveedores
-mayores_proveedores <- licitaciones %>%
-  filter(monedda == "USD" & proveedor_adjudicado == c("PURDY MOTOR S. A.",
-                                                      "LUTZ HERMANOS Y COMPAÑIA, LTDA.",
-                                                      "COMPONENTES EL ORBE S.A.",
-                                                      "Nutri Med S.A.",
-                                                      "HOSPIMEDICA S. A.")) 
-
-# Grafico con esa seleccion de mayores proveedores en dolares
-ggplot(mayores_proveedores, aes(x = fecha_de_adjudicacion, y = monto_adjudicado, colour = proveedor_adjudicado)) + 
-  # geom_bar(stat = "identity") +
-  geom_point(size = 2) + 
-  # scale_colour_viridis_d() + 
-  scale_colour_viridis_d() + 
-  scale_x_date(date_breaks = "1 month") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90))  
-  # facet_wrap(~ proveedor_adjudicado)
-```
+## 
 
 
-## CRC
-```{r}
-mayores_proveedores <- licitaciones %>%
-  filter(monedda == "CRC" | proveedor_adjudicado == c("Jimenez y Tanzi S. A.",
-                                                      "Fesa Formas Eficientes S.A.",
-                                                      "INDIANAPOLIS S.A.",
-                                                      "ABONOS AGRO S. A.",
-                                                      "Distribuidora Ramirez y Castillo S. A.")) 
 
-# Grafico con esa seleccion de mayores proveedores en dolares
-ggplot(mayores_proveedores, aes(x = fecha_de_adjudicacion, y = monto_adjudicado, colour = proveedor_adjudicado)) + 
-  geom_point(size = 2) + 
-  scale_colour_viridis_d() + 
-  scale_x_date(date_breaks = "1 month") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90))  
-```
 
-# Comportamiento a traves del tiempo por los cinco mayores instituciones
 
 
