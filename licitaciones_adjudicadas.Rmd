@@ -120,7 +120,7 @@ Con las fechas los primeros valores parecen indicar que tienen la estructura de
 mes/día/año por lo que vamos a usar la función de _lubridate_ `mdy`
 ```{r}
 # Coercionar fechas
-fecha <- licitaciones %>%
+licitaciones <- licitaciones %>%
   mutate(fecha_de_adjudicacion = lubridate::mdy(fecha_de_adjudicacion))
 
 # Corroborar que no se formaron NA's
