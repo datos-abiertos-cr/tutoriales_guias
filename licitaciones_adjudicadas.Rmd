@@ -1,6 +1,6 @@
 ---
 title: "Ingestión Licitaciones"
-author: "Erick Calderon & Ronny Hdez-Mora"
+author: "Erick Calderón & Ronny Hdez-Mora"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 always_allow_html: yes
 output:
@@ -93,7 +93,54 @@ con la función `clean_names()` del paquete _janitor_.
 - La columna de monto adjudicado hay que coercionarla a numerico. Debe de hacerse
 con cuidad porque hay comas que separan los miles y puntos que separan decimales.
 
-## 
+## **Coerciones y orden en estructura de datos**
+Con lo observado anteriormente vamos a empezar a darle forma al conjunto de datos
+para que en una exploración de los datos nos sea fácil hacer la manipulación
+
+####  Limpiar nombres
+El primer paso que vamos a realizar es limpiar los nombres a un estilo que sea
+mejor para trabajar:
+
+```{r}
+# Limpiamos nombres
+licitaciones <- licitaciones %>% 
+  janitor::clean_names()
+
+# Revisamos nombres
+names(licitaciones)
+```
+
+
+#### Coerciones
+Mencionamos que las columnas que contienen fechas deben de estar como fechas y no
+como character. Así mismo lo que contiene valores numéricos debe de coercinarse
+a numérico.
+
+Con las fechas los primeros valores parecen indicar que tienen la estructura de
+mes/día/año por lo que vamos a usar la función de _lubridate_ `mdy`
+```{r}
+# Coercionar fechas
+fecha <- licitaciones %>%
+  mutate(fecha_de_adjudicacion = lubridate::mdy(fecha_de_adjudicacion))
+
+# Corroborar que no se formaron NA's
+any(is.na(fecha$fecha_de_adjudicacion))
+```
+
+Efectivamente se formaron NA's. Esto quiere decir que en el conjunto de datos las
+fechas no cuentan con un format de fechas consistente. 
+
+Revisemos los NA para dimensionar el impacto de la transformación en el conjunto
+de datos. Lo primero es que vamos a revisar cuántos NA se formaron luego de hacer
+la coerción:
+
+```{r}
+sum(is.na(fecha$fecha_de_adjudicacion))
+```
+
+¡Bien! Sólo hay una observación de 103472 por lo que podemos prescindir de esta.
+
+
 
 
 
