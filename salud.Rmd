@@ -28,6 +28,7 @@ library(kableExtra)
 # Comunicación con el API
 En primer lugar para traer los datos que el Gobierno de Costa Rica tiene 
 disponibles y abiertos, tenemos que seguir una serie de pasos en nuestra sesión.
+
 La que presentamos acá no es la única manera de hacerlo,  pero tratamos de 
 presentar un paso a paso que nos lleve a identificar fácilmente los conjuntos
 de datos existentes y cómo tener un vistazo rápido de las dimensiones.
@@ -41,7 +42,7 @@ api_key <- "a5fff4275119df5926a807941576f6cad95cf84f"
 
 ```
 
-## Revisar cuales conjuntos de datos existen
+## Revisar cuáles conjuntos de datos existen
 ```{r, cache = TRUE,  message = FALSE, warning = FALSE}
 indice <- get_index(url_base, api_key = api_key)
 
