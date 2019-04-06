@@ -1,0 +1,149 @@
+---
+title: "Ingestión Licitaciones"
+author: "Erick Calderón & Ronny Hdez-Mora"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+always_allow_html: yes
+output:
+  html_document:
+    theme: spacelab
+    toc: yes
+    toc_float:
+      collapsed: no
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+library(readr)
+library(junr)
+library(dplyr)
+library(ggplot2)
+library(janitor)
+library(lubridate)
+library(kableExtra)
+library(jsonlite)
+library(stringr)
+```
+
+# **Datos**
+
+El conjunto de datos que analizamos corresponde a **Licitaciones Adjudicadas de las Instituciones Públicas para el período 2014-2015**. Estos se encuentran en la
+dirección web del gobierno de Costa Rica en este [enlace](http://datosabiertos.presidencia.go.cr/dataviews/112440/licitaciones-adjudicadas-de-las-instituciones-publicas-para-el-periodo-2014-2015/)
+
+## **Credenciales**
+Uno de los primeros paso es que debemos de crear como objetos las credenciales
+para poder comunicarnos con el API de datos abiertos del Gobierno de CR.
+```{r credenciales, echo = TRUE, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+url_base <- "http://api.datosabiertos.presidencia.go.cr/api/v2/datastreams/"
+api_key <- "a5fff4275119df5926a807941576f6cad95cf84f"
+```
+
+## **Obtener conjunto de datos**
+
+El cconjunto de datos tal cual como se muestra en la página aparenta tener
+103472 observaciones, sin embargo cuando hacemos uso de la función `get_data()`
+nos trae muchas menos observaciones.
+
+Esto sucede para prevenir que existan afectaciones en el motor del API Junar.Por
+ende, si queremos hacer una exploración inicial para comprender los datos y su
+estructura, lo mejor es **no superar el límite**.
+
+En el momento que queramos obtener todos los datos, podemos usar el argumento
+`stream = "unlimited"`. De  nuevo, este parámetro hay que usarlo con precaución.
+
+```{r conexion api, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+# Anotar en un objeto el GUID de la tabla que nos interesa
+guid_tabla <- "LICIT-ADJUD-DE-LAS-INSTI"
+
+# Llamar la tabla. Usamos las mismas credenciales que habíamos usado
+licitaciones <- get_data(base_url = url_base, api_key = api_key,
+                         guid = guid_tabla, stream = "unlimited")
+```
+
+
+```{r objeto a feather, echo = FALSE}
+# feather::write_feather(licitaciones, "datos/licitaciones.feather")
+# licitaciones <- feather::read_feather("datos/licitaciones.feather")
+```
+
+# Exploración
+
+## **Vistazo del conjunto de datos**
+```{r}
+glimpse(licitaciones)
+```
+
+**¿Qué observamos del conjunto de datos?**
+
+- Hay una columna que indica la moneda. Es importante tomar esto en cuenta para la exploración y análisis  para separar las licitaciones por colones o dólares.
+
+- Otro punto a destacar son dos columnas que parecen ser NA's, por lo cual si no
+tienen información podríamos deshacernos de estas.
+
+- La columna fecha hay que coercionarla a clase fecha ya que se encuentra como 
+character. Esto lo podremos trabajar con el paquete _lubridate_
+
+- Para mayor facilidad a la hora de manipular las variables podríamos limpiarlos
+con la función `clean_names()` del paquete _janitor_.
+
+- Año es una columna que parece ser inútil ya que tenemos una columna con la fecha.
+
+- La columna de monto adjudicado hay que coercionarla a numerico. Debe de hacerse
+con cuidad porque hay comas que separan los miles y puntos que separan decimales.
+
+## **Coerciones y orden en estructura de datos**
+Con lo observado anteriormente vamos a empezar a darle forma al conjunto de datos
+para que en una exploración de los datos nos sea fácil hacer la manipulación
+
+####  Limpiar nombres
+El primer paso que vamos a realizar es limpiar los nombres a un estilo que sea
+mejor para trabajar:
+
+```{r}
+# Limpiamos nombres
+licitaciones <- licitaciones %>% 
+  janitor::clean_names()
+
+# Revisamos nombres
+names(licitaciones)
+```
+
+
+#### Coerciones
+Mencionamos que las columnas que contienen fechas deben de estar como fechas y no
+como character. Así mismo lo que contiene valores numéricos debe de coercinarse
+a numérico.
+
+Con las fechas los primeros valores parecen indicar que tienen la estructura de
+mes/día/año por lo que vamos a usar la función de _lubridate_ `mdy`
+```{r}
+# Coercionar fechas
+fecha <- licitaciones %>%
+  mutate(fecha_de_adjudicacion = lubridate::mdy(fecha_de_adjudicacion))
+
+# Corroborar que no se formaron NA's
+any(is.na(fecha$fecha_de_adjudicacion))
+```
+
+Efectivamente se formaron NA's. Esto quiere decir que en el conjunto de datos las
+fechas no cuentan con un format de fechas consistente. 
+
+Revisemos los NA para dimensionar el impacto de la transformación en el conjunto
+de datos. Lo primero es que vamos a revisar cuántos NA se formaron luego de hacer
+la coerción:
+
+```{r}
+sum(is.na(fecha$fecha_de_adjudicacion))
+```
+
+¡Bien! Sólo hay una observación de 103472 por lo que podemos prescindir de esta.
+
+
+
+
+
+
+
+
