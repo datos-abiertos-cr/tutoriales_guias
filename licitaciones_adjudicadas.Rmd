@@ -140,6 +140,11 @@ sum(is.na(fecha$fecha_de_adjudicacion))
 
 ¡Bien! Sólo hay una observación de 103472 por lo que podemos prescindir de esta.
 
+```{r}
+licitaciones$monto_adjudicado <-  as.numeric(gsub(",", "", licitaciones$monto_adjudicado))
+
+```
+
 
 
 
