@@ -180,9 +180,29 @@ adjudicaciones_colones <- licitaciones %>%
 glimpse(adjudicaciones_colones)
 ```
 
+Vamos a crear una función que nos ayude a mejorar la visualización de los 
+montos de colones y dolares
+```{r}
+moneda <- function(x, moneda = "colones") {
+  if (moneda == "colones") {
+    lucr::to_currency(x, currency_symbol = "₡",
+              symbol_first = TRUE, group_size = 3,
+              group_delim = ".", decimal_size = 2,
+              decimal_delim = ",")
+  } else if (moneda == "dolares") {
+    lucr::to_currency(x, currency_symbol = "$",
+              symbol_first = TRUE, group_size = 3,
+              group_delim = ".", decimal_size = 2,
+              decimal_delim = ",")
+  } else {
+    print("Error de denominación de moneda")
+  }
+}
+```
+
 # **EDA**
 
-### Instituciones con mayores montos adjudicados en colones
+### Instituciones con mayor cantidad de adjudicaciones en colones
 ```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 adjudicaciones_colones %>% 
   group_by(institucion) %>% 
@@ -195,12 +215,32 @@ adjudicaciones_colones %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
+### Instituciones con mayores cantidades de adjudicaciones en colones
+```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
+adjudicaciones_colones %>% 
+  group_by(institucion) %>% 
+  summarise(
+    total = n(),
+    monto = sum(monto_adjudicado, na.rm = TRUE)
+  ) %>% 
+  arrange(desc(total)) %>% 
+  # mutate(monto = moneda(monto)) %>% 
+  slice(1:30) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
 ### Proveedores con mayor cantidad de veces adjudicados
 ```{r, eval = TRUE, cache = TRUE,  message = FALSE, warning = FALSE}
 licitaciones %>% 
   group_by(proveedor_adjudicado) %>% 
-  count() %>% 
-  arrange(desc(n))
+  summarise(
+    total = n()
+  ) %>% 
+  arrange(desc(total)) %>% 
+  slice(1:10) %>%
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
 ### Proveedores con mayores montons adjudicados en colones
@@ -211,7 +251,11 @@ adjudicaciones_colones %>%
     total = n(),
     monto = sum(monto_adjudicado, na.rm = TRUE)
   ) %>% 
-  arrange(desc(monto))
+  arrange(desc(monto)) %>% 
+  slice(1:10) %>%
+  mutate(monto = moneda(monto, "colones")) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
 ### Montos adjudicados en colones a través del tiempo
@@ -224,6 +268,27 @@ ggplot(adjudicaciones_colones, aes(x = fecha_de_adjudicacion, y = monto_adjudica
   scale_x_date(date_breaks = "1 month") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90))
+```
+
+### Adjudicaciones por tipo de trámite
+No sabemos qué significa el tipo de trámite, pero tratamos de revisar los
+montos adjudicados por año. La primera visualización corresponde a los montos
+en  colones.
+```{r}
+ggplot(adjudicaciones_colones, aes(x = ano, y = monto_adjudicado, fill = tipo_tramite)) +
+  geom_bar(stat = "identity") + 
+  scale_fill_viridis_d() +
+  xlab("Año") + ylab("Monto adjudicado") + 
+  theme_bw(base_size = 16)
+```
+
+El siguiente gráfico muetra los que corresponden dólares
+```{r}
+ggplot(adjudicaciones_dolares, aes(x = ano, y = monto_adjudicado, fill = tipo_tramite)) +
+  geom_bar(stat = "identity") + 
+  scale_fill_viridis_d() +
+  xlab("Año") + ylab("Monto adjudicado") + 
+  theme_bw(base_size = 16)
 ```
 
 
